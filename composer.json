@@ -1,0 +1,16 @@
+{
+    "name": "coenjacobs/wordpress-ai-provider",
+    "description": "Shared base package for WordPress AI provider plugins",
+    "type": "library",
+    "license": "GPL-2.0-or-later",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "CoenJacobs\\WordPressAiProvider\\": "src/"
+        }
+    }
+}
