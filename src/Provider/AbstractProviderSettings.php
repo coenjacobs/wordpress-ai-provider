@@ -197,7 +197,10 @@ abstract class AbstractProviderSettings
     }
 
     /**
-     * Enqueue the model selector assets from the shared package.
+     * Enqueue the model selector assets.
+     *
+     * Assets are expected at the plugin's own assets/ directory, copied there
+     * from the shared package during the build process.
      *
      * @param string $pluginFile Path to the main plugin file.
      */
@@ -206,13 +209,9 @@ abstract class AbstractProviderSettings
         $pluginData = get_file_data($pluginFile, ['Version' => 'Version']);
         $version = $pluginData['Version'] ?: '0.1.0';
 
-        $packageAssetsDir = dirname(__DIR__, 2) . '/assets';
-        $pluginDir = dirname($pluginFile);
-        $relativePath = $this->getRelativePath($pluginDir, $packageAssetsDir);
-
         wp_enqueue_script(
             $this->config->getProviderId() . '-model-selector',
-            plugins_url($relativePath . '/model-selector.js', $pluginFile),
+            plugins_url('assets/model-selector.js', $pluginFile),
             [],
             $version,
             true
@@ -220,31 +219,10 @@ abstract class AbstractProviderSettings
 
         wp_enqueue_style(
             $this->config->getProviderId() . '-model-selector',
-            plugins_url($relativePath . '/model-selector.css', $pluginFile),
+            plugins_url('assets/model-selector.css', $pluginFile),
             [],
             $version
         );
-    }
-
-    /**
-     * Get the relative path from one directory to another.
-     */
-    private function getRelativePath(string $from, string $to): string
-    {
-        $fromParts = explode('/', rtrim((string) realpath($from), '/'));
-        $toParts = explode('/', rtrim((string) realpath($to), '/'));
-
-        $commonLength = 0;
-        $maxLength = min(count($fromParts), count($toParts));
-        while ($commonLength < $maxLength && $fromParts[$commonLength] === $toParts[$commonLength]) {
-            $commonLength++;
-        }
-
-        $upCount = count($fromParts) - $commonLength;
-        $remaining = array_slice($toParts, $commonLength);
-
-        $parts = array_merge(array_fill(0, $upCount, '..'), $remaining);
-        return implode('/', $parts);
     }
 
     /**
