@@ -7,6 +7,7 @@ namespace CoenJacobs\WordPressAiProvider\Provider;
 use CoenJacobs\WordPressAiProvider\Http\WpHttpClient;
 use WordPress\AiClient\AiClient;
 use WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
+use CoenJacobs\WordPressAiProvider\Admin\AbstractSettingsPage;
 use WordPress\AiClient\Providers\Http\HttpTransporter;
 
 /**
@@ -108,7 +109,7 @@ abstract class AbstractProviderPlugin
     /**
      * Create the settings page instance for this plugin.
      *
-     * @return \CoenJacobs\WordPressAiProvider\Admin\AbstractSettingsPage
+     * @return AbstractSettingsPage
      */
     abstract protected function createSettingsPage();
 
