@@ -81,10 +81,22 @@ abstract class TextGenerationModel extends AbstractApiBasedModel implements Text
 
         foreach ($prompt as $message) {
             $role = $message->getRole()->isUser() ? 'user' : 'model';
-            $text = $this->extractText($message);
+            $parts = [];
+
+            foreach ($message->getParts() as $part) {
+                $partData = $this->getMessagePartData($part);
+                if ($partData !== null) {
+                    $parts[] = $partData;
+                }
+            }
+
+            if (empty($parts)) {
+                continue;
+            }
+
             $contents[] = [
                 'role' => $role,
-                'parts' => [['text' => $text]],
+                'parts' => $parts,
             ];
         }
 
@@ -175,17 +187,43 @@ abstract class TextGenerationModel extends AbstractApiBasedModel implements Text
         );
     }
 
-    private function extractText(Message $message): string
+    /**
+     * Convert a single message part to the Google Gemini parts format.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function getMessagePartData(MessagePart $part): ?array
     {
-        $text = '';
+        if ($part->getType()->isText()) {
+            return ['text' => $part->getText()];
+        }
 
-        foreach ($message->getParts() as $part) {
-            if ($part->getType()->isText()) {
-                $text .= $part->getText();
+        if ($part->getType()->isFile()) {
+            $file = $part->getFile();
+            if ($file === null) {
+                return null;
+            }
+
+            if ($file->isInline()) {
+                return [
+                    'inlineData' => [
+                        'mimeType' => $file->getMimeType(),
+                        'data' => $file->getBase64Data(),
+                    ],
+                ];
+            }
+
+            if ($file->isRemote()) {
+                return [
+                    'fileData' => [
+                        'mimeType' => $file->getMimeType(),
+                        'fileUri' => $file->getUrl(),
+                    ],
+                ];
             }
         }
 
-        return $text;
+        return null;
     }
 
     private function mapFinishReason(string $reason): FinishReasonEnum

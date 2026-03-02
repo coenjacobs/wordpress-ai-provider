@@ -80,10 +80,22 @@ abstract class TextGenerationModel extends AbstractApiBasedModel implements Text
 
         foreach ($prompt as $message) {
             $role = $message->getRole()->isUser() ? 'user' : 'assistant';
-            $text = $this->extractText($message);
+            $content = [];
+
+            foreach ($message->getParts() as $part) {
+                $partData = $this->getMessagePartData($part);
+                if ($partData !== null) {
+                    $content[] = $partData;
+                }
+            }
+
+            if (empty($content)) {
+                continue;
+            }
+
             $messages[] = [
                 'role' => $role,
-                'content' => [['type' => 'text', 'text' => $text]],
+                'content' => $content,
             ];
         }
 
@@ -162,17 +174,32 @@ abstract class TextGenerationModel extends AbstractApiBasedModel implements Text
         );
     }
 
-    private function extractText(Message $message): string
+    /**
+     * Convert a single message part to the Anthropic content block format.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function getMessagePartData(MessagePart $part): ?array
     {
-        $text = '';
+        if ($part->getType()->isText()) {
+            return ['type' => 'text', 'text' => $part->getText()];
+        }
 
-        foreach ($message->getParts() as $part) {
-            if ($part->getType()->isText()) {
-                $text .= $part->getText();
+        if ($part->getType()->isFile()) {
+            $file = $part->getFile();
+            if ($file !== null && $file->isImage() && $file->isInline()) {
+                return [
+                    'type' => 'image',
+                    'source' => [
+                        'type' => 'base64',
+                        'media_type' => $file->getMimeType(),
+                        'data' => $file->getBase64Data(),
+                    ],
+                ];
             }
         }
 
-        return $text;
+        return null;
     }
 
     private function mapFinishReason(string $reason): FinishReasonEnum
