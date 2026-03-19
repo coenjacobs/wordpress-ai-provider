@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace CoenJacobs\WordPressAiProvider\Provider;
 
-use CoenJacobs\WordPressAiProvider\Http\WpHttpClient;
 use WordPress\AiClient\AiClient;
 use WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
 use CoenJacobs\WordPressAiProvider\Admin\AbstractSettingsPage;
-use WordPress\AiClient\Providers\Http\HttpTransporter;
 
 /**
- * Base plugin class that handles provider registration, admin setup, and HTTP transporter.
+ * Base plugin class that handles provider registration and admin setup.
  *
  * Subclasses must implement the abstract methods to provide provider-specific configuration.
  */
@@ -67,20 +65,6 @@ abstract class AbstractProviderPlugin
         if ($apiKey !== '') {
             $auth = new ApiKeyRequestAuthentication($apiKey);
             $registry->setProviderRequestAuthentication($this->getConfig()->getProviderId(), $auth);
-        }
-
-        // Set up the HTTP transporter if not already configured.
-        // This is needed for actual model execution during AI Experiments.
-        // Only works when AI Experiments plugin is installed (provides unscoped PSR interfaces).
-        try {
-            $registry->getHttpTransporter();
-        } catch (\Throwable $e) {
-            if (class_exists('Nyholm\\Psr7\\Factory\\Psr17Factory')) {
-                $factory     = new \Nyholm\Psr7\Factory\Psr17Factory();
-                $client      = new WpHttpClient();
-                $transporter = new HttpTransporter($client, $factory, $factory);
-                $registry->setHttpTransporter($transporter);
-            }
         }
     }
 
