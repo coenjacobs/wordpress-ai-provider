@@ -7,15 +7,14 @@ namespace CoenJacobs\WordPressAiProvider\Provider;
 use CoenJacobs\WordPressAiProvider\ModelDirectory\AbstractModelMetadataDirectory;
 
 /**
- * Base settings class handling API key management, credentials, model list, and refresh.
+ * Base settings class handling model selection and refresh.
  *
+ * API key management is handled by the WordPress Connectors system.
  * Subclasses can override registerAdditionalSettings() to add extra fields
  * and createModelMetadataDirectory() to provide their specific directory.
  */
 abstract class AbstractProviderSettings
 {
-    public const CREDENTIALS_OPTION = 'wp_ai_client_provider_credentials';
-
     private ProviderConfig $config;
 
     public function __construct(ProviderConfig $config)
@@ -28,69 +27,9 @@ abstract class AbstractProviderSettings
         return $this->config;
     }
 
-    /**
-     * Check if the API key is configured via environment variable or PHP constant.
-     */
-    public static function hasEnvApiKeyFor(ProviderConfig $config): bool
-    {
-        $env = getenv($config->getEnvVarName());
-        if (is_string($env) && $env !== '') {
-            return true;
-        }
-
-        if (defined($config->getConstantName())) {
-            $constant = constant($config->getConstantName());
-            return is_string($constant) && $constant !== '';
-        }
-
-        return false;
-    }
-
-    /**
-     * Get the active API key (ENV takes precedence over constant, constant over wp_options).
-     */
-    public static function getActiveApiKeyFor(ProviderConfig $config): string
-    {
-        $env = getenv($config->getEnvVarName());
-        if (is_string($env) && $env !== '') {
-            return $env;
-        }
-
-        if (defined($config->getConstantName())) {
-            $constant = constant($config->getConstantName());
-            if (is_string($constant) && $constant !== '') {
-                return $constant;
-            }
-        }
-
-        $credentials = get_option(self::CREDENTIALS_OPTION, []);
-        if (is_array($credentials) && isset($credentials[$config->getProviderId()])) {
-            $key = $credentials[$config->getProviderId()];
-            if (is_string($key)) {
-                return $key;
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * Convenience instance method for the active API key.
-     */
-    public function getActiveApiKey(): string
-    {
-        return self::getActiveApiKeyFor($this->config);
-    }
-
     public function registerSettings(): void
     {
         $this->handleRefreshModels();
-
-        register_setting($this->config->getOptionGroup(), self::CREDENTIALS_OPTION, [
-            'type' => 'object',
-            'default' => [],
-            'sanitize_callback' => [$this, 'sanitizeCredentials'],
-        ]);
 
         register_setting($this->config->getOptionGroup(), $this->config->getEnabledModelsOption(), [
             'type' => 'array',
@@ -103,14 +42,6 @@ abstract class AbstractProviderSettings
             $this->config->getSectionTitle(),
             [$this, 'renderSectionDescription'],
             $this->config->getPageSlug()
-        );
-
-        add_settings_field(
-            $this->config->getProviderId() . '_api_key',
-            'API Key',
-            [$this, 'renderApiKeyField'],
-            $this->config->getPageSlug(),
-            $this->config->getSectionId()
         );
 
         $this->registerAdditionalSettings();
@@ -135,39 +66,6 @@ abstract class AbstractProviderSettings
     public function renderSectionDescription(): void
     {
         echo $this->config->getSectionDescriptionHtml();
-    }
-
-    /**
-     * Render the API key settings field, showing env-configured key or an input.
-     */
-    public function renderApiKeyField(): void
-    {
-        if (self::hasEnvApiKeyFor($this->config)) {
-            $key = self::getActiveApiKeyFor($this->config);
-            $masked = strlen($key) > 8
-                ? substr($key, 0, 3) . str_repeat('*', strlen($key) - 7) . substr($key, -4)
-                : str_repeat('*', strlen($key));
-
-            $envVar = $this->config->getEnvVarName();
-            $source = getenv($envVar) !== false && getenv($envVar) !== ''
-                ? $envVar . ' environment variable'
-                : $this->config->getConstantName() . ' constant';
-
-            echo '<p>';
-            echo '<span class="dashicons dashicons-yes-alt" style="color: #00a32a;"></span> ';
-            echo 'Configured via ' . esc_html($source);
-            echo ' (<code>' . esc_html($masked) . '</code>)';
-            echo '</p>';
-
-            return;
-        }
-
-        $providerId = $this->config->getProviderId();
-        $credentials = get_option(self::CREDENTIALS_OPTION, []);
-        $value = $credentials[$providerId] ?? '';
-        echo '<input type="password" id="' . esc_attr($providerId) . '_api_key"'
-            . ' name="' . esc_attr(self::CREDENTIALS_OPTION) . '[' . esc_attr($providerId) . ']"'
-            . ' value="' . esc_attr($value) . '" class="regular-text" autocomplete="off" />';
     }
 
     /**
@@ -236,38 +134,6 @@ abstract class AbstractProviderSettings
         }
 
         return array_values(array_map('sanitize_text_field', $input));
-    }
-
-    /**
-     * Sanitize the credentials option, merging our key into the shared array.
-     *
-     * @param array|mixed $input
-     * @return array<string, string>
-     */
-    public function sanitizeCredentials($input): array
-    {
-        $existing = get_option(self::CREDENTIALS_OPTION, []);
-        if (!is_array($existing)) {
-            $existing = [];
-        }
-
-        if (!is_array($input)) {
-            return $existing;
-        }
-
-        $providerId = $this->config->getProviderId();
-        $new_key = isset($input[$providerId])
-            ? trim($input[$providerId])
-            : ($existing[$providerId] ?? '');
-
-        $old_key = $existing[$providerId] ?? '';
-        if ($new_key !== $old_key) {
-            delete_transient($this->config->getModelsTransientKey());
-        }
-
-        $existing[$providerId] = $new_key;
-
-        return $existing;
     }
 
     private function handleRefreshModels(): void

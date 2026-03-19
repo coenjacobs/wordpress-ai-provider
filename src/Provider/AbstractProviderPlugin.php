@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace CoenJacobs\WordPressAiProvider\Provider;
 
 use WordPress\AiClient\AiClient;
-use WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
 use CoenJacobs\WordPressAiProvider\Admin\AbstractSettingsPage;
 
 /**
@@ -60,20 +59,6 @@ abstract class AbstractProviderPlugin
         }
 
         $registry->registerProvider($providerClass);
-
-        $apiKey = $this->getApiKey();
-        if ($apiKey !== '') {
-            $auth = new ApiKeyRequestAuthentication($apiKey);
-            $registry->setProviderRequestAuthentication($this->getConfig()->getProviderId(), $auth);
-        }
-    }
-
-    /**
-     * Get the active API key for this provider.
-     */
-    protected function getApiKey(): string
-    {
-        return AbstractProviderSettings::getActiveApiKeyFor($this->getConfig());
     }
 
     /**

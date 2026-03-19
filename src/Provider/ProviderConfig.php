@@ -13,8 +13,6 @@ class ProviderConfig
 {
     private string $providerId;
     private string $providerName;
-    private string $envVarName;
-    private string $constantName;
     private string $enabledModelsOption;
     private string $modelsTransientKey;
     private string $errorTransientKey;
@@ -39,8 +37,6 @@ class ProviderConfig
     {
         $this->providerId = $config['providerId'];
         $this->providerName = $config['providerName'];
-        $this->envVarName = $config['envVarName'];
-        $this->constantName = $config['constantName'];
         $this->enabledModelsOption = $config['enabledModelsOption'];
         $this->modelsTransientKey = $config['modelsTransientKey'];
         $this->errorTransientKey = $config['errorTransientKey'];
@@ -67,16 +63,6 @@ class ProviderConfig
     public function getProviderName(): string
     {
         return $this->providerName;
-    }
-
-    public function getEnvVarName(): string
-    {
-        return $this->envVarName;
-    }
-
-    public function getConstantName(): string
-    {
-        return $this->constantName;
     }
 
     public function getEnabledModelsOption(): string
