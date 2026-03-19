@@ -13,8 +13,6 @@ use WordPress\AiClient\Providers\Http\DTO\Response;
 use WordPress\AiClient\Providers\Http\Enums\HttpMethodEnum;
 use WordPress\AiClient\Providers\Http\Util\ResponseUtil;
 use WordPress\AiClient\Providers\Models\TextGeneration\Contracts\TextGenerationModelInterface;
-use Generator;
-use RuntimeException;
 use WordPress\AiClient\Results\DTO\Candidate;
 use WordPress\AiClient\Results\DTO\GenerativeAiResult;
 use WordPress\AiClient\Results\DTO\TokenUsage;
@@ -27,14 +25,6 @@ use WordPress\AiClient\Results\Enums\FinishReasonEnum;
  */
 abstract class TextGenerationModel extends AbstractApiBasedModel implements TextGenerationModelInterface
 {
-    /**
-     * @param Message[] $prompt
-     */
-    public function streamGenerateTextResult(array $prompt): Generator
-    {
-        throw new RuntimeException('Streaming is not yet implemented.');
-    }
-
     public function generateTextResult(array $prompt): GenerativeAiResult
     {
         $params = $this->prepareGenerateTextParams($prompt);
