@@ -219,11 +219,11 @@ abstract class AbstractModelMetadataDirectory implements ModelMetadataDirectoryI
             new SupportedOption(OptionEnum::stopSequences()),
             new SupportedOption(
                 OptionEnum::inputModalities(),
-                [$this->detectInputModalities($modelData)]
+                self::modalitySubsets($this->detectInputModalities($modelData))
             ),
             new SupportedOption(
                 OptionEnum::outputModalities(),
-                [$this->detectOutputModalities($modelData)]
+                self::modalitySubsets($this->detectOutputModalities($modelData))
             ),
         ];
     }
@@ -248,5 +248,34 @@ abstract class AbstractModelMetadataDirectory implements ModelMetadataDirectoryI
     protected function detectOutputModalities(array $modelData): array
     {
         return [ModalityEnum::text()];
+    }
+
+    /**
+     * Generate all non-empty subsets of a modality list.
+     *
+     * A model supporting [text, image] should match requests for [text],
+     * [image], or [text, image]. SupportedOption requires each valid
+     * combination to be listed explicitly.
+     *
+     * @param list<ModalityEnum> $modalities
+     * @return list<list<ModalityEnum>>
+     */
+    protected static function modalitySubsets(array $modalities): array
+    {
+        $count = count($modalities);
+        $total = (1 << $count);
+        $subsets = [];
+
+        for ($i = 1; $i < $total; $i++) {
+            $subset = [];
+            for ($j = 0; $j < $count; $j++) {
+                if ($i & (1 << $j)) {
+                    $subset[] = $modalities[$j];
+                }
+            }
+            $subsets[] = $subset;
+        }
+
+        return $subsets;
     }
 }
