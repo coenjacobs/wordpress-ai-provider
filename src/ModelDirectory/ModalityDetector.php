@@ -47,6 +47,10 @@ class ModalityDetector
                 return ModalityEnum::image();
             case 'audio':
                 return ModalityEnum::audio();
+            case 'file':
+                return ModalityEnum::document();
+            case 'video':
+                return ModalityEnum::video();
             default:
                 return null;
         }
